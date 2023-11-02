@@ -78,10 +78,9 @@ const results = {
 
     const mobileRenderers = [
       /adreno/i,
-      /apple/i,
+      /apple gpu/i, // Safari 14+ obfuscates its GPU type, so could also be desktop 🤷🏻
       /mali-t/i,
       /mali/i,
-      /nvidia/i,
       /powervr/i,
       /samsung/i,
     ];
@@ -89,7 +88,6 @@ const results = {
     const desktopRenderers = [
       /angle/i,
       /intel/i,
-      /apple/i,
       /amd/i,
       /radeon/i,
       /nvidia/i,
@@ -100,7 +98,7 @@ const results = {
       mobileRenderers.some((r) => r.test(renderer)) &&
       !desktopRenderers.some((r) => r.test(renderer))
     );
-  })(),
+  })(), // https://github.com/pmndrs/detect-gpu/blob/master/src/index.ts#L136
 };
 
 document.getElementById("root").innerText = JSON.stringify(
