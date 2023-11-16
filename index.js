@@ -1,15 +1,17 @@
 const details = {};
 
-const results = {
-  isMobileTouchPoints: (() => {
+const methods = {
+  TouchPoints: async () => {
     const { maxTouchPoints } = navigator;
     details.maxTouchPoints = maxTouchPoints;
     return maxTouchPoints > 1;
-  })(), // https://stackoverflow.com/a/64487087
+  }, // https://stackoverflow.com/a/64487087
 
-  isMobileTouchEvents: "TouchEvent" in window && "ontouchstart" in window, // https://stackoverflow.com/a/31420123
+  TouchEvents: async () => {
+    return "TouchEvent" in window && "ontouchstart" in window;
+  }, // https://stackoverflow.com/a/31420123
 
-  isMobileUserAgent: (() => {
+  UserAgent: async () => {
     let check = false;
     (function (a) {
       if (
@@ -24,20 +26,20 @@ const results = {
     })(navigator.userAgent || navigator.vendor || window.opera);
     details.userAgent = navigator.userAgent;
     return check;
-  })(), // https://stackoverflow.com/a/11381730
+  }, // https://stackoverflow.com/a/11381730
 
-  isMobileOrientation: (() => {
+  Orientation: async () => {
     details.orientation = screen.orientation;
     return typeof screen.orientation !== "undefined";
-  })(), // https://stackoverflow.com/a/14301832
+  }, // https://stackoverflow.com/a/14301832
 
-  isMobileUserAgentData: (() => {
+  UserAgentData: async () => {
     const { userAgentData } = navigator;
     details.userAgentData = userAgentData;
     return userAgentData?.mobile;
-  })(), // https://caniuse.com/mdn-api_navigator_useragentdata
+  }, // https://caniuse.com/mdn-api_navigator_useragentdata
 
-  isMobileNavigator: (() => {
+  Navigator: async () => {
     const { userAgent, platform, maxTouchPoints } = window.navigator;
 
     const isIOS = /(iphone|ipod|ipad)/i.test(userAgent);
@@ -57,9 +59,9 @@ const results = {
     details.isIPad = isIPad;
 
     return isAndroid || isIOS || isIPad;
-  })(), // https://github.com/pmndrs/detect-gpu/blob/master/src/internal/deviceInfo.ts
+  }, // https://github.com/pmndrs/detect-gpu/blob/master/src/internal/deviceInfo.ts
 
-  isMobileGPU: (() => {
+  GPU: async () => {
     let canvas = document.createElement("canvas");
     let gl;
     let debugInfo;
@@ -98,11 +100,23 @@ const results = {
       mobileRenderers.some((r) => r.test(renderer)) &&
       !desktopRenderers.some((r) => r.test(renderer))
     );
-  })(), // https://github.com/pmndrs/detect-gpu/blob/master/src/index.ts#L136
+  }, // https://github.com/pmndrs/detect-gpu/blob/master/src/index.ts#L136
 };
 
-document.getElementById("root").innerText = JSON.stringify(
-  { ...results, details },
-  null,
-  2
-);
+const resolveMethods = async (methods) => {
+  return Object.fromEntries(
+    await Promise.all(
+      Object.entries(methods).map(async ([m, f]) => [m, await f()])
+    )
+  );
+};
+
+const run = async () => {
+  document.getElementById("root").innerText = JSON.stringify(
+    { ...(await resolveMethods(methods)), details },
+    null,
+    2
+  );
+};
+
+run();
