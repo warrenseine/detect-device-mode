@@ -101,6 +101,127 @@ const methods = {
       !desktopRenderers.some((r) => r.test(renderer))
     );
   }, // https://github.com/pmndrs/detect-gpu/blob/master/src/index.ts#L136
+
+  DeviceMotion: async () => {
+    let lastAcceleration = null;
+    let tries = 0;
+    let timeout = null;
+
+    return new Promise((resolve) => {
+      function stop(success) {
+        window.removeEventListener("devicemotion", handleDeviceMotion);
+        clearTimeout(timeout);
+        resolve(success);
+      }
+
+      function handleDeviceMotion(event) {
+        const { acceleration } = event;
+
+        if (!lastAcceleration) {
+          lastAcceleration = acceleration;
+          return;
+        }
+
+        const hasChanged =
+          acceleration.x != lastAcceleration.x ||
+          acceleration.y != lastAcceleration.y ||
+          acceleration.z != lastAcceleration.z;
+
+        if (hasChanged) {
+          stop(true);
+        } else if (tries > 10) {
+          return stop(false);
+        } else {
+          lastAcceleration = acceleration;
+        }
+      }
+
+      // Check if Device Motion API is supported
+      deviceMotionSupported =
+        "DeviceMotionEvent" in window &&
+        // iOS 13+ requires permissions, so considering unsupported
+        !DeviceMotionEvent.requestPermission;
+
+      details.deviceMotionSupported = deviceMotionSupported;
+
+      if (deviceMotionSupported) {
+        window.addEventListener("devicemotion", handleDeviceMotion);
+        timeout = setTimeout(() => stop(false), 1000);
+      } else {
+        stop(false);
+      }
+    });
+  },
+
+  DeviceOrientation: async () => {
+    let lastOrientation = null;
+    let tries = 0;
+    let timeout = null;
+
+    return new Promise((resolve) => {
+      function stop(success) {
+        window.removeEventListener(
+          "deviceorientation",
+          handleDeviceOrientation
+        );
+        clearTimeout(timeout);
+        resolve(success);
+      }
+
+      function handleDeviceOrientation(event) {
+        const { alpha, beta, gamma } = event;
+
+        if (!lastOrientation) {
+          lastOrientation = { alpha, beta, gamma };
+          return;
+        }
+
+        const hasChanged =
+          alpha != lastOrientation.alpha ||
+          beta != lastOrientation.beta ||
+          gamma != lastOrientation.gamma;
+
+        if (hasChanged) {
+          stop(true);
+        } else if (tries > 10) {
+          return stop(false);
+        } else {
+          lastOrientation = { alpha, beta, gamma };
+        }
+      }
+
+      // Check if Device Orientation API is supported
+      deviceOrientationSupported =
+        "DeviceOrientationEvent" in window &&
+        // iOS 13+ requires permissions, so considering unsupported
+        !DeviceOrientationEvent.requestPermission;
+
+      details.deviceOrientationSupported = deviceOrientationSupported;
+
+      if (deviceOrientationSupported) {
+        window.addEventListener("deviceorientation", handleDeviceOrientation);
+        timeout = setTimeout(() => stop(false), 1000);
+      } else {
+        stop(false);
+      }
+    });
+  },
+
+  Battery: async () => {
+    const batterySupported = !!navigator.getBattery;
+
+    details.batterySupported = batterySupported;
+
+    if (!batterySupported) {
+      return false;
+    }
+
+    const battery = await navigator.getBattery();
+    const hasBattery =
+      battery && battery.level !== null && battery.chargingTime !== Infinity;
+
+    return hasBattery;
+  },
 };
 
 const resolveMethods = async (methods) => {
